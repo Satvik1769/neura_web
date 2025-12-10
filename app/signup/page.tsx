@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Power, Lock, User, Eye, EyeOff } from "lucide-react";
 import Link from "next/link";
+import { showToast } from "@/lib/toast";
 
 export default function SignupPage() {
   const [name, setName] = useState("");
@@ -21,9 +22,28 @@ export default function SignupPage() {
     e.preventDefault();
     setIsLoading(true);
     try {
+      // Use the signup function from auth context instead of calling API directly
+      // This ensures user state is updated and redirect happens
       await signup(email, password, name);
+      // Success toast will be shown by auth context if needed
     } catch (error) {
       console.error("Signup failed:", error);
+      
+      // Extract error message from different error types
+      let errorMessage = "Registration failed. Please try again.";
+
+      if (error instanceof Error) {
+        errorMessage = error.message;
+      } else if (typeof error === "string") {
+        errorMessage = error;
+      } else if (typeof error === "object" && error !== null) {
+        if ("message" in error) {
+          errorMessage = String(error.message);
+        }
+      }
+
+      // Show error toast with only the message (no description)
+      showToast.error(errorMessage);
     } finally {
       setIsLoading(false);
     }

@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Power, Lock, User, Eye, EyeOff } from "lucide-react";
 import Link from "next/link";
+import { showToast } from "@/lib/toast";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -23,6 +24,22 @@ export default function LoginPage() {
       await login(email, password);
     } catch (error) {
       console.error("Login failed:", error);
+      
+      // Extract error message from different error types
+      let errorMessage = "Login failed. Please try again.";
+
+      if (error instanceof Error) {
+        errorMessage = error.message;
+      } else if (typeof error === "string") {
+        errorMessage = error;
+      } else if (typeof error === "object" && error !== null) {
+        if ("message" in error) {
+          errorMessage = String(error.message);
+        }
+      }
+
+      // Show error toast with only the message (no description)
+      showToast.error(errorMessage);
     } finally {
       setIsLoading(false);
     }

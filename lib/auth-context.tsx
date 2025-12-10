@@ -2,6 +2,8 @@
 
 import { createContext, useContext, useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { authApi } from "./api";
+import { tokenStorage } from "./auth-storage";
 
 interface User {
   id: string;
@@ -25,46 +27,113 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const router = useRouter();
 
   useEffect(() => {
-    // Check if user is logged in (from localStorage)
-    const storedUser = localStorage.getItem("user");
-    if (storedUser) {
-      setUser(JSON.parse(storedUser));
-    }
-    setIsLoading(false);
+    // Check if user is logged in
+    // OPTION 1: If using HTTP-only cookies, backend will validate automatically
+    // OPTION 2: If using localStorage, check for token
+    const checkAuth = async () => {
+      try {
+        // If your backend returns token in response, uncomment this:
+        // const token = tokenStorage.getToken();
+        // if (!token) {
+        //   setIsLoading(false);
+        //   return;
+        // }
+
+        // Try to fetch current user from backend
+        // const userData = await authApi.getCurrentUser();
+        // setUser(userData);
+
+        // Temporary: Check localStorage for user (remove when backend is ready)
+        const storedUser = localStorage.getItem("user");
+        if (storedUser) {
+          setUser(JSON.parse(storedUser));
+        }
+      } catch (error) {
+        console.error("Auth check failed:", error);
+        // Token might be expired, clear it
+        tokenStorage.removeToken();
+        localStorage.removeItem("user");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    checkAuth();
   }, []);
 
   const login = async (email: string, password: string) => {
-    // TODO: Replace with actual API call
-    // Mock authentication
-    const mockUser = {
-      id: "1",
-      email,
-      name: email.split("@")[0],
-    };
-    
-    setUser(mockUser);
-    localStorage.setItem("user", JSON.stringify(mockUser));
-    router.push("/dashboard");
+    try {
+      const response = await authApi.login(email, password);
+      
+      // OPTION 1: If backend sets HTTP-only cookies
+      // Just set the user data, token is in cookies
+      if (response.user) {
+        setUser(response.user);
+        localStorage.setItem("user", JSON.stringify(response.user));
+      }
+
+      // OPTION 2: If backend returns token in response body
+      // Uncomment if your backend returns { token, user }
+      // if (response.token) {
+      //   tokenStorage.setToken(response.token);
+      //   if (response.refreshToken) {
+      //     tokenStorage.setRefreshToken(response.refreshToken);
+      //   }
+      // }
+      // if (response.user) {
+      //   setUser(response.user);
+      //   localStorage.setItem("user", JSON.stringify(response.user));
+      // }
+
+      router.push("/dashboard");
+    } catch (error) {
+      console.error("Login failed:", error);
+      throw error;
+    }
   };
 
   const signup = async (email: string, password: string, name: string) => {
-    // TODO: Replace with actual API call
-    // Mock authentication
-    const mockUser = {
-      id: "1",
-      email,
-      name,
-    };
-    
-    setUser(mockUser);
-    localStorage.setItem("user", JSON.stringify(mockUser));
-    router.push("/dashboard");
+    try {
+      const response = await authApi.register(email, password, name);
+      
+      // OPTION 1: If backend sets HTTP-only cookies
+      if (response.user) {
+        setUser(response.user);
+        localStorage.setItem("user", JSON.stringify(response.user));
+      }
+
+      // OPTION 2: If backend returns token in response body
+      // Uncomment if your backend returns { token, user }
+      // if (response.token) {
+      //   tokenStorage.setToken(response.token);
+      //   if (response.refreshToken) {
+      //     tokenStorage.setRefreshToken(response.refreshToken);
+      //   }
+      // }
+      // if (response.user) {
+      //   setUser(response.user);
+      //   localStorage.setItem("user", JSON.stringify(response.user));
+      // }
+
+      router.push("/dashboard");
+    } catch (error) {
+      console.error("Signup failed:", error);
+      throw error;
+    }
   };
 
-  const logout = () => {
-    setUser(null);
-    localStorage.removeItem("user");
-    router.push("/login");
+  const logout = async () => {
+    try {
+      await authApi.logout();
+    } catch (error) {
+      console.error("Logout failed:", error);
+    } finally {
+      // Clear all auth data
+      setUser(null);
+      tokenStorage.removeToken();
+      localStorage.removeItem("user");
+      router.push("/login");
+    }
   };
 
   return (
