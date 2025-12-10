@@ -102,8 +102,9 @@ export const authApi = {
   },
 
   logout: async (): Promise<void> => {
-    return apiFetch<void>('/api/auth/logout', {
-      method: 'POST',
+    return apiFetch<void>('/api/auth/logout-device', {
+      method: 'PUT',
+      credentials: "include",
     });
   },
 };
