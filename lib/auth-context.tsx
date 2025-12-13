@@ -46,7 +46,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         // Temporary: Check localStorage for user (remove when backend is ready)
         const storedUser = localStorage.getItem("user");
         if (storedUser) {
-          setUser(JSON.parse(storedUser));
+          const parsed = JSON.parse(storedUser);
+          // Handle case where backend returns just a string instead of user object
+          if (typeof parsed === 'string') {
+            setUser({
+              id: '0',
+              email: '',
+              name: parsed
+            });
+          } else {
+            setUser(parsed);
+          }
         }
       } catch (error) {
         console.error("Auth check failed:", error);
@@ -64,12 +74,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const login = async (email: string, password: string) => {
     try {
       const response = await authApi.login(email, password);
-      
+
       // OPTION 1: If backend sets HTTP-only cookies
       // Just set the user data, token is in cookies
       if (response.user) {
-        setUser(response.user);
-        localStorage.setItem("user", JSON.stringify(response.user));
+        // Handle case where backend returns just a string instead of user object
+        const userObj = typeof response.user === 'string'
+          ? { id: '0', email: email, name: response.user }
+          : response.user;
+
+        setUser(userObj);
+        localStorage.setItem("user", JSON.stringify(userObj));
       }
 
       // OPTION 2: If backend returns token in response body
@@ -95,11 +110,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const signup = async (email: string, password: string, name: string) => {
     try {
       const response = await authApi.register(email, password, name);
-      
+
       // OPTION 1: If backend sets HTTP-only cookies
       if (response.user) {
-        setUser(response.user);
-        localStorage.setItem("user", JSON.stringify(response.user));
+        // Handle case where backend returns just a string instead of user object
+        const userObj = typeof response.user === 'string'
+          ? { id: '0', email: email, name: response.user }
+          : response.user;
+
+        setUser(userObj);
+        localStorage.setItem("user", JSON.stringify(userObj));
       }
 
       // OPTION 2: If backend returns token in response body

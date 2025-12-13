@@ -5,7 +5,8 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Power, Search, User, LogOut, Loader2, Activity } from "lucide-react";
+import { Power, Search, Loader2, Activity } from "lucide-react";
+import { UserDropdown } from "@/components/user-dropdown";
 import { Badge } from "@/components/ui/badge";
 import { EngineOption } from "@/lib/types";
 import { deviceApi } from "@/lib/api";
@@ -169,20 +170,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
             </div>
 
             {/* User Menu */}
-            <div className="flex items-center gap-2">
-              <div className="hidden md:flex items-center gap-2 px-3 py-2 bg-muted rounded-lg">
-                <User className="w-4 h-4 text-cyan-accent" />
-                <span className="text-sm text-foreground">{user.name}</span>
-              </div>
-              <Button
-                variant="outline"
-                size="icon"
-                onClick={logout}
-                className="border-border hover:bg-muted"
-              >
-                <LogOut className="w-4 h-4" />
-              </Button>
-            </div>
+            <UserDropdown />
           </div>
         </div>
       </header>
