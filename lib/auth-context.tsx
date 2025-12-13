@@ -40,24 +40,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         // }
 
         // Try to fetch current user from backend
-        // const userData = await authApi.getCurrentUser();
-        // setUser(userData);
+        const userData = await authApi.getCurrentUser();
+        setUser(userData);
 
-        // Temporary: Check localStorage for user (remove when backend is ready)
-        const storedUser = localStorage.getItem("user");
-        if (storedUser) {
-          const parsed = JSON.parse(storedUser);
-          // Handle case where backend returns just a string instead of user object
-          if (typeof parsed === 'string') {
-            setUser({
-              id: '0',
-              email: '',
-              name: parsed
-            });
-          } else {
-            setUser(parsed);
-          }
-        }
       } catch (error) {
         console.error("Auth check failed:", error);
         // Token might be expired, clear it

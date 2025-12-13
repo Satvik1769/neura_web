@@ -107,6 +107,12 @@ export const authApi = {
       method: 'PUT',
     });
   },
+
+  getCurrentUser: async (): Promise<AuthResponse['user']> => {
+    return apiFetch<AuthResponse['user']>('/api/auth/me', {
+      method: 'GET',
+    });
+  },
 };
 
 /**

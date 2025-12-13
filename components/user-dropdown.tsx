@@ -1,6 +1,6 @@
 "use client";
 
-import { User, Settings, FolderKanban, LogOut } from "lucide-react";
+import { User, Settings, FolderKanban, LogOut, BookDashedIcon } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -18,6 +18,7 @@ export function UserDropdown() {
   const router = useRouter();
 
   const getInitials = (name: string) => {
+    console.log(name);
     return name
       .split(" ")
       .map((n) => n[0])
@@ -36,7 +37,7 @@ export function UserDropdown() {
         <button className="flex items-center gap-2 px-3 py-2 bg-muted rounded-lg hover:bg-muted/80 transition-colors focus:outline-none focus:ring-2 focus:ring-cyan-accent focus:ring-offset-2 focus:ring-offset-background">
           <Avatar className="w-8 h-8">
             <AvatarFallback className="bg-cyan-accent text-white text-xs font-semibold">
-              {user ? getInitials(user.name) : "U"}
+              {user ? getInitials(user?.name) : "U"}
             </AvatarFallback>
           </Avatar>
           <span className="text-sm text-foreground hidden md:block">
@@ -57,6 +58,10 @@ export function UserDropdown() {
         <DropdownMenuItem onClick={() => handleNavigation("/dashboard/profile")}>
           <User className="mr-2 h-4 w-4" />
           <span>Profile</span>
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={() => handleNavigation("/dashboard")}>
+          <BookDashedIcon className="mr-2 h-4 w-4" />
+          <span>Dashboard</span>
         </DropdownMenuItem>
         <DropdownMenuItem onClick={() => handleNavigation("/dashboard/projects")}>
           <FolderKanban className="mr-2 h-4 w-4" />
