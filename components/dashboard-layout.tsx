@@ -5,9 +5,10 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Power, Search, User, LogOut } from "lucide-react";
-import { mockEngines } from "@/lib/mock-data";
+import { Power, Search, User, LogOut, Loader2, Activity } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 import { EngineOption } from "@/lib/types";
+import { deviceApi } from "@/lib/api";
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -17,6 +18,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<EngineOption[]>([]);
   const [showResults, setShowResults] = useState(false);
+  const [isSearching, setIsSearching] = useState(false);
   const { user, logout, isLoading } = useAuth();
   const router = useRouter();
 
@@ -27,19 +29,33 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
   }, [user, isLoading, router]);
 
   useEffect(() => {
-    if (searchQuery.trim()) {
-      const filtered = mockEngines.filter(
-        (engine) =>
-          engine.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          engine.model.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          engine.serialNumber.toLowerCase().includes(searchQuery.toLowerCase())
-      );
-      setSearchResults(filtered);
-      setShowResults(true);
-    } else {
-      setSearchResults([]);
-      setShowResults(false);
-    }
+    const searchDevices = async () => {
+      const query = searchQuery.trim();
+
+      if (!query || query.length <= 2) {
+        setSearchResults([]);
+        setShowResults(false);
+        return;
+      }
+
+      // Use API for queries longer than 2 characters
+      setIsSearching(true);
+      try {
+        const results = await deviceApi.searchDevices(query);
+        setSearchResults(results);
+        setShowResults(true);
+      } catch (error) {
+        console.error("Search failed:", error);
+        setSearchResults([]);
+        setShowResults(false);
+      } finally {
+        setIsSearching(false);
+      }
+    };
+
+    // Debounce the search
+    const timeoutId = setTimeout(searchDevices, 300);
+    return () => clearTimeout(timeoutId);
   }, [searchQuery]);
 
   const handleDeviceClick = (deviceId: string) => {
@@ -90,27 +106,58 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                   placeholder="Search devices..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-10 bg-background border-border"
+                  className="pl-10 pr-10 bg-background border-border"
                 />
+                {isSearching && (
+                  <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-cyan-accent animate-spin" />
+                )}
               </div>
               
               {/* Search Results Dropdown */}
               {showResults && searchResults.length > 0 && (
-                <div className="absolute top-full mt-2 w-full bg-card border border-border rounded-lg shadow-lg max-h-64 overflow-y-auto z-50">
-                  {searchResults.map((engine) => (
-                    <button
-                      key={engine.id}
-                      onClick={() => handleDeviceClick(engine.id)}
-                      className="w-full px-4 py-3 text-left hover:bg-muted transition-colors border-b border-border last:border-b-0"
-                    >
-                      <div className="font-medium text-foreground">
-                        {engine.name} - {engine.model}
-                      </div>
-                      <div className="text-sm text-text-secondary">
-                        {engine.serialNumber}
-                      </div>
-                    </button>
-                  ))}
+                <div className="absolute top-full mt-2 w-full bg-card border border-border rounded-lg shadow-lg max-h-96 overflow-y-auto z-50">
+                  {searchResults.map((engine) => {
+                    const isHealthy = engine.isHealthy ?? (engine.healthScore ? engine.healthScore > 70 : true);
+                    
+                    return (
+                      <button
+                        key={engine.id}
+                        onClick={() => handleDeviceClick(String(engine.deviceId))}
+                        className="w-full px-4 py-3 text-left hover:bg-muted transition-colors border-b border-border last:border-b-0 group"
+                      >
+                        <div className="flex items-start gap-3">
+                          {/* Device Logo */}
+                          <div className="w-10 h-10 rounded-full bg-cyan-accent/20 flex items-center justify-center flex-shrink-0 group-hover:bg-cyan-accent/30 transition-colors">
+                            <Power className="w-5 h-5 text-cyan-accent" />
+                          </div>
+                          
+                          {/* Device Info */}
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-start justify-between gap-2 mb-1">
+                              <div className="font-medium text-foreground group-hover:text-cyan-accent transition-colors">
+                                {engine.deviceName} - {engine.deviceModel}
+                              </div>
+                              <Badge
+                                className={
+                                  isHealthy
+                                    ? "bg-green-status/20 text-green-status border-green-status/30 flex-shrink-0"
+                                    : "bg-yellow-500/20 text-yellow-500 border-yellow-500/30 flex-shrink-0"
+                                }
+                              >
+                                <Activity className="w-3 h-3 mr-1" />
+                                {isHealthy ? "Healthy" : "Warning"}
+                              </Badge>
+                            </div>
+                            {engine.location && (
+                              <div className="text-xs text-text-secondary mt-1">
+                                Location: {engine.location}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </button>
+                    );
+                  })}
                 </div>
               )}
               

@@ -12,10 +12,21 @@ export interface ParameterCardProps {
 }
 
 export interface EngineOption {
-  id: string;
-  name: string;
-  model: string;
-  serialNumber: string;
+  id: number;
+  userId: number;
+  deviceId: number;
+  location: string;
+  deviceType: string;
+  deviceName: string;
+  deviceModel: string;
+  ipAddress: string;
+  macAddress: string;
+  createdAt: string;
+  updatedAt: string;
+  isActive: boolean;
+  healthScore?: number;
+  status?: string;
+  isHealthy?: boolean;
 }
 
 export interface DashboardProps {
@@ -38,10 +49,18 @@ export interface ParameterReading {
 }
 
 export interface EngineData {
-  id: string;
-  name: string;
-  model: string;
-  serialNumber: string;
+  id: number;
+  deviceName: string;
+  deviceModel: string;
+  macAddress: string;
+  deviceId: number;
+  location: string;
+  deviceType: string;
+  ipAddress: string;
+  isActive: boolean;
+  healthScore?: number;
+  status?: string;
+  isHealthy?: boolean;
   currentParameters: {
     temperature: { value: number; status: ParameterStatus; isActive: boolean };
     vibration: { value: number; status: ParameterStatus; isActive: boolean };

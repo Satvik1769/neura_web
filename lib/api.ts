@@ -54,6 +54,7 @@ async function apiFetch<T>(
       responseText = await response.text();
     } catch {
       responseText = '';
+      
     }
 
     // Try to parse as JSON
@@ -104,7 +105,6 @@ export const authApi = {
   logout: async (): Promise<void> => {
     return apiFetch<void>('/api/auth/logout-device', {
       method: 'PUT',
-      credentials: "include",
     });
   },
 };
@@ -114,19 +114,25 @@ export const authApi = {
  */
 export const deviceApi = {
   getDevices: async () => {
-    return apiFetch('/devices', {
+    return apiFetch('/api/devices', {
       method: 'GET',
     });
   },
 
   getDeviceById: async (deviceId: string) => {
-    return apiFetch(`/devices/${deviceId}`, {
+    return apiFetch(`/api/devices/getDeviceById/${deviceId}`, {
       method: 'GET',
     });
   },
 
   getDeviceParameters: async (deviceId: string) => {
-    return apiFetch(`/devices/${deviceId}/parameters`, {
+    return apiFetch(`/api/devices/getDeviceById/${deviceId}/parameters`, {
+      method: 'GET',
+    });
+  },
+
+  searchDevices: async (query: string): Promise<any[]> => {
+    return apiFetch<any[]>(`/api/devices/search?keyword=${encodeURIComponent(query)}`, {
       method: 'GET',
     });
   },
