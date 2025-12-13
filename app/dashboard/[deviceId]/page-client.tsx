@@ -207,9 +207,31 @@ export function DevicePageClient({ deviceId }: DevicePageClientProps) {
     notFound();
   }
 
-  const handleExportCSV = () => {
-    // TODO: Implement CSV export functionality
-    console.log("Exporting CSV for engine:", deviceId);
+  const handleExportCSV = async () => {
+    try {
+      showToast.info("Download", "Preparing CSV file...");
+
+      const blob = await deviceApi.getDeviceCSV(deviceId);
+
+      // Create a download link
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `device-${engineData?.deviceName || deviceId}-data.csv`;
+
+      // Trigger download
+      document.body.appendChild(link);
+      link.click();
+
+      // Cleanup
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+
+      showToast.success("Success", "CSV file downloaded successfully");
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : "Failed to download CSV";
+      showToast.error("Error", errorMessage);
+    }
   };
 
   return (

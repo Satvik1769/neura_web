@@ -131,6 +131,21 @@ export const deviceApi = {
     });
   },
 
+  getDeviceCSV: async (deviceId: string): Promise<Blob> => {
+    const url = getApiUrl(`/api/devices/csv/${deviceId}`);
+
+    const response = await fetch(url, {
+      method: 'GET',
+      credentials: 'include',
+    });
+
+    if (!response.ok) {
+      throw new ApiError('Failed to download CSV', response.status);
+    }
+
+    return response.blob();
+  },
+
   searchDevices: async (query: string): Promise<any[]> => {
     return apiFetch<any[]>(`/api/devices/search?keyword=${encodeURIComponent(query)}`, {
       method: 'GET',
