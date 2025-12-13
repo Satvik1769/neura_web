@@ -117,7 +117,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
               {showResults && searchResults.length > 0 && (
                 <div className="absolute top-full mt-2 w-full bg-card border border-border rounded-lg shadow-lg max-h-96 overflow-y-auto z-50">
                   {searchResults.map((engine) => {
-                    const isHealthy = engine.isHealthy ?? (engine.healthScore ? engine.healthScore > 70 : true);
+                    const isHealthy = engine.isHealthy ?? (engine.healthScore ? engine.healthScore > 70 : false);
                     
                     return (
                       <button

@@ -126,7 +126,7 @@ export const deviceApi = {
   },
 
   getDeviceParameters: async (deviceId: string) => {
-    return apiFetch(`/api/devices/getDeviceById/${deviceId}/parameters`, {
+    return apiFetch(`/api/devices/detail/${deviceId}`, {
       method: 'GET',
     });
   },

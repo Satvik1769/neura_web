@@ -69,3 +69,32 @@ export interface EngineData {
   };
   historicalData: ParameterReading[];
 }
+
+
+export interface DeviceDetailsDto {
+  temperature: number | null;
+  vibration: number | null;
+  rpm: number | null;
+  acoustic: number | null;
+  metricHealth?: Record<string, boolean>;
+  status?: string;
+  historicalData?: any[];
+}
+
+export interface DevicesDto {
+  id: number;
+  userId: number;
+  deviceId: number;
+  location: string;
+  deviceType: string;
+  deviceName: string;
+  deviceModel: string;
+  ipAddress: string;
+  macAddress: string;
+  createdAt: string;
+  updatedAt: string;
+  isActive: boolean;
+  healthScore?: number;
+  status?: string;
+  isHealthy?: boolean;
+}
