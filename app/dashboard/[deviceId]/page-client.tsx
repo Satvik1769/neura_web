@@ -177,12 +177,10 @@ export function DevicePageClient({ deviceId }: DevicePageClientProps) {
       const period = option.timePeriods.find((p) => p.periodName === selectedTimePeriod);
       if (!period) return;
 
-      const baseValue = performanceData.multiplyRatio[option.optionName]?.[selectedTimePeriod] ?? 0;
-
       period.multipliers.forEach((item) => {
         const dataPoint = dataMap.get(item.t);
         if (dataPoint) {
-          dataPoint[option.optionName] =  item.m;
+          dataPoint[option.optionName] = item.m;
         }
       });
     });
@@ -329,7 +327,13 @@ export function DevicePageClient({ deviceId }: DevicePageClientProps) {
                       padding: '12px',
                     }}
                     labelStyle={{ color: '#fff', marginBottom: '8px' }}
-                    formatter={(value: number) => value.toFixed(2)}
+                    formatter={(value: number, name: string) => {
+                      // Extract the metric name from the display name (e.g., "Temperature (°C)" -> "Temperature")
+                      const metricName = name.split(' ')[0];
+                      const baseRatio = performanceData?.multiplyRatio[metricName]?.[selectedTimePeriod] ?? 1;
+                      const actualValue = value * baseRatio;
+                      return actualValue.toFixed(2);
+                    }}
                   />
                   <Legend
                     wrapperStyle={{ paddingTop: '20px' }}
