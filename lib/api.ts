@@ -113,8 +113,8 @@ export const authApi = {
  * Device/Engine API calls
  */
 export const deviceApi = {
-  getDevices: async () => {
-    return apiFetch('/api/devices', {
+  getDevices: async (page: number = 0, size: number = 9) => {
+    return apiFetch(`/api/devices/getDevices?page=${page}&size=${size}`, {
       method: 'GET',
     });
   },
