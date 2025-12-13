@@ -161,12 +161,19 @@ export function DevicePageClient({ deviceId }: DevicePageClientProps) {
 
     // Initialize with timestamps
     selectedPeriod.multipliers.forEach((item) => {
+      const date = new Date(item.t);
       dataMap.set(item.t, {
-        timestamp: new Date(item.t).toLocaleString('en-US', {
+        timestamp: date.toLocaleString('en-US', {
           month: 'short',
           day: 'numeric',
           hour: '2-digit',
           minute: '2-digit'
+        }),
+        // Short format for mobile
+        timestampShort: date.toLocaleString('en-US', {
+          month: 'numeric',
+          day: 'numeric',
+          hour: 'numeric'
         }),
         rawTimestamp: item.t,
       });
@@ -300,16 +307,16 @@ export function DevicePageClient({ deviceId }: DevicePageClientProps) {
 
         {/* Performance Trends Chart */}
         {performanceData && (
-          <div className="bg-card border border-border rounded-lg p-6">
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-xl font-semibold text-foreground">
-                Performance Trends - All Metrics
+          <div className="bg-card border border-border rounded-lg p-4 md:p-6">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
+              <h3 className="text-lg md:text-xl font-semibold text-foreground">
+                Performance Trends
               </h3>
               {/* Time Period Selector */}
-              <div className="flex items-center gap-2">
-                <span className="text-sm text-text-secondary">Period:</span>
+              <div className="flex items-center gap-2 w-full sm:w-auto">
+                <span className="text-sm text-text-secondary whitespace-nowrap">Period:</span>
                 <Select value={selectedTimePeriod} onValueChange={setSelectedTimePeriod}>
-                  <SelectTrigger className="w-[120px] border-border bg-background">
+                  <SelectTrigger className="w-full sm:w-[120px] border-border bg-background">
                     <SelectValue placeholder="Select period" />
                   </SelectTrigger>
                   <SelectContent>
@@ -321,45 +328,67 @@ export function DevicePageClient({ deviceId }: DevicePageClientProps) {
               </div>
             </div>
 
+            {/* Mobile scroll hint */}
+            <div className="md:hidden text-xs text-text-secondary mb-2 flex items-center gap-1">
+              <span>💡 Swipe horizontally to view full chart</span>
+            </div>
+            
             {/* Chart */}
-            <div className="w-full h-[500px]">
-              <ResponsiveContainer width="100%" height="100%">
+            <div className="w-full h-[400px] md:h-[500px] overflow-x-auto">
+              <div className="min-w-[600px] md:min-w-0 h-full">
+                <ResponsiveContainer width="100%" height="100%">
                 <LineChart
                   data={chartData}
-                  margin={{ top: 5, right: 30, left: 20, bottom: 80 }}
+                  margin={{ 
+                    top: 5, 
+                    right: 10, 
+                    left: 0, 
+                    bottom: 100 
+                  }}
                 >
                   <CartesianGrid strokeDasharray="3 3" stroke="#333" />
                   <XAxis
-                    dataKey="timestamp"
+                    dataKey="timestampShort"
                     stroke="#888"
-                    tick={{ fill: '#888', fontSize: 11 }}
+                    tick={{ fill: '#888', fontSize: 10 }}
                     angle={-45}
                     textAnchor="end"
-                    height={80}
+                    height={90}
+                    interval="preserveStartEnd"
+                    minTickGap={30}
                   />
                   <YAxis
                     stroke="#888"
-                    tick={{ fill: '#888', fontSize: 12 }}
+                    tick={{ fill: '#888', fontSize: 11 }}
+                    width={45}
                   />
                   <Tooltip
                     contentStyle={{
                       backgroundColor: '#1a1a1a',
                       border: '1px solid #333',
                       borderRadius: '8px',
-                      padding: '12px',
+                      padding: '8px 12px',
+                      fontSize: '13px',
                     }}
-                    labelStyle={{ color: '#fff', marginBottom: '8px' }}
+                    labelStyle={{ color: '#fff', marginBottom: '6px', fontSize: '12px' }}
                     formatter={(value: number, name: string) => {
                       // Extract the metric name from the display name (e.g., "Temperature (°C)" -> "Temperature")
                       const metricName = name.split(' ')[0];
                       const baseRatio = performanceData?.multiplyRatio[metricName]?.[selectedTimePeriod] ?? 1;
                       const actualValue = value * baseRatio;
-                      return actualValue.toFixed(2);
+                      return [actualValue.toFixed(2), name];
                     }}
+                    cursor={{ stroke: '#888', strokeWidth: 1, strokeDasharray: '5 5' }}
                   />
                   <Legend
-                    wrapperStyle={{ paddingTop: '20px' }}
+                    wrapperStyle={{ 
+                      paddingTop: '20px',
+                      fontSize: '12px'
+                    }}
                     iconType="line"
+                    iconSize={12}
+                    layout="horizontal"
+                    verticalAlign="bottom"
                   />
                   <Line
                     type="monotone"
@@ -399,14 +428,15 @@ export function DevicePageClient({ deviceId }: DevicePageClientProps) {
                   />
                 </LineChart>
               </ResponsiveContainer>
+              </div>
             </div>
 
             {/* Base Values Info */}
-            <div className="mt-6 grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="mt-6 grid grid-cols-2 md:grid-cols-4 gap-3">
               {performanceData.options.map((option) => (
-                <div key={option.optionName} className="bg-background/50 rounded-lg p-3 border border-border">
-                  <div className="text-xs text-text-secondary mb-1">{option.optionName}</div>
-                  <div className="text-sm font-semibold text-foreground">
+                <div key={option.optionName} className="bg-background/50 rounded-lg p-2.5 md:p-3 border border-border">
+                  <div className="text-xs text-text-secondary mb-1 truncate">{option.optionName}</div>
+                  <div className="text-xs md:text-sm font-semibold text-foreground">
                     Base: {performanceData.multiplyRatio[option.optionName]?.[selectedTimePeriod]?.toFixed(2) ?? 'N/A'}
                   </div>
                 </div>

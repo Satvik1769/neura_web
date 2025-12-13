@@ -32,41 +32,59 @@ const chartConfig = {
 };
 
 export function ParameterChart({ data }: ParameterChartProps) {
-  const formattedData = data.map((reading) => ({
-    time: new Date(reading.timestamp).toLocaleTimeString("en-US", {
-      hour: "2-digit",
-      minute: "2-digit",
-      second: "2-digit",
-    }),
-    temperature: reading.temperature,
-    heat: reading.heat,
-    vibration: reading.vibration,
-    acceleration: reading.acceleration,
-  }));
+  const formattedData = data.map((reading) => {
+    const date = new Date(reading.timestamp);
+    return {
+      time: date.toLocaleTimeString("en-US", {
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+      }),
+      timeShort: date.toLocaleTimeString("en-US", {
+        hour: "2-digit",
+        minute: "2-digit",
+      }),
+      temperature: reading.temperature,
+      heat: reading.heat,
+      vibration: reading.vibration,
+      acceleration: reading.acceleration,
+    };
+  });
 
   return (
     <div className="w-full">
-      <h3 className="text-lg font-semibold text-foreground mb-4">
+      <h3 className="text-base md:text-lg font-semibold text-foreground mb-4">
         Parameter Trends (Last 2 Hours)
       </h3>
-      <ChartContainer config={chartConfig} className="w-full h-[400px]">
-        <LineChart data={formattedData}>
+      <ChartContainer config={chartConfig} className="w-full h-[300px] md:h-[400px]">
+        <LineChart 
+          data={formattedData}
+          margin={{ top: 5, right: 10, left: 0, bottom: 5 }}
+        >
           <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
           <XAxis
-            dataKey="time"
+            dataKey="timeShort"
             stroke="#94a3b8"
-            fontSize={12}
+            fontSize={10}
             tickLine={false}
             axisLine={false}
-            interval={20}
+            interval="preserveStartEnd"
+            minTickGap={40}
+            angle={-45}
+            textAnchor="end"
+            height={60}
           />
           <YAxis
             stroke="#94a3b8"
-            fontSize={12}
+            fontSize={10}
             tickLine={false}
             axisLine={false}
+            width={40}
           />
-          <ChartTooltip content={<ChartTooltipContent />} />
+          <ChartTooltip 
+            content={<ChartTooltipContent />}
+            cursor={{ stroke: '#94a3b8', strokeWidth: 1, strokeDasharray: '5 5' }}
+          />
           <Line
             type="monotone"
             dataKey="acceleration"
