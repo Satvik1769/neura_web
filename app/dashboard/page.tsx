@@ -10,6 +10,7 @@ import { Power, Loader2, AlertCircle, ChevronLeft, ChevronRight } from "lucide-r
 import { deviceApi } from "@/lib/api";
 import { DevicesDto, PaginatedResponse } from "@/lib/types";
 import { showToast } from "@/lib/toast";
+import { useDashboardSocket } from "@/app/hooks/useDashboardSocket";
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -20,6 +21,7 @@ export default function DashboardPage() {
   const [totalPages, setTotalPages] = useState(0);
   const [totalElements, setTotalElements] = useState(0);
   const pageSize = 9;
+  const socketData = useDashboardSocket();
 
   useEffect(() => {
     const fetchDevices = async () => {
@@ -51,6 +53,36 @@ export default function DashboardPage() {
 
     fetchDevices();
   }, [currentPage]);
+
+  // Handle real-time updates from WebSocket
+  useEffect(() => {
+    if (socketData) {
+      console.log("Received real-time dashboard update:", socketData);
+
+      // If socket sends array of all devices, replace the devices
+      if (Array.isArray(socketData)) {
+        setDevices(socketData);
+      }
+      // If socket sends a single device update, merge it with existing devices
+      else if (socketData.deviceId !== undefined) {
+        setDevices(prev => {
+          const deviceExists = prev.some(d => d.deviceId === socketData.deviceId);
+
+          if (deviceExists) {
+            // Update existing device
+            return prev.map(device =>
+              device.deviceId === socketData.deviceId
+                ? { ...device, ...socketData }
+                : device
+            );
+          } else {
+            // Add new device if it doesn't exist
+            return [...prev, socketData as DevicesDto];
+          }
+        });
+      }
+    }
+  }, [socketData]);
 
   const handleDeviceClick = (deviceId: number) => {
     router.push(`/dashboard/${deviceId}`);

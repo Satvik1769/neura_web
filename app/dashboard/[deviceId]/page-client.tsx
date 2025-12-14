@@ -9,6 +9,7 @@ import { notFound } from "next/navigation";
 import { deviceApi } from "@/lib/api";
 import { EngineData, DeviceDetailsDto, DevicesDto } from "@/lib/types";
 import { showToast } from "@/lib/toast";
+import { useDashboardSocket } from "@/app/hooks/useDashboardSocket";
 import {
   Select,
   SelectContent,
@@ -51,6 +52,7 @@ export function DevicePageClient({ deviceId }: DevicePageClientProps) {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedTimePeriod, setSelectedTimePeriod] = useState<string>("1D");
+  const socketData = useDashboardSocket();
 
   useEffect(() => {
     const fetchDeviceData = async () => {
@@ -141,6 +143,56 @@ export function DevicePageClient({ deviceId }: DevicePageClientProps) {
 
     fetchDeviceData();
   }, [deviceId]);
+
+  // Handle real-time updates from WebSocket
+  useEffect(() => {
+    if (socketData) {
+      // Check if the update is for the current device
+      const updateDeviceId = typeof socketData.deviceId === 'number'
+        ? socketData.deviceId
+        : parseInt(String(socketData.deviceId || '0'));
+
+      if (updateDeviceId === parseInt(deviceId)) {
+        console.log("Received real-time update for device:", deviceId, socketData);
+
+        // Update engine data with new values from socket
+        setEngineData(prev => {
+          if (!prev) return prev;
+
+          return {
+            ...prev,
+            // Update health score and status if provided
+            healthScore: socketData.healthScore ?? prev.healthScore,
+            isHealthy: socketData.isHealthy ?? prev.isHealthy,
+            status: socketData.status ?? prev.status,
+            // Update current parameters if they exist in socketData
+            currentParameters: {
+              temperature: {
+                ...prev.currentParameters.temperature,
+                value: socketData.temperature ?? prev.currentParameters.temperature.value,
+                status: socketData.metricHealth?.temperature === false ? "warning" as const : prev.currentParameters.temperature.status,
+              },
+              vibration: {
+                ...prev.currentParameters.vibration,
+                value: socketData.vibration ?? prev.currentParameters.vibration.value,
+                status: socketData.metricHealth?.vibration === false ? "warning" as const : prev.currentParameters.vibration.status,
+              },
+              acceleration: {
+                ...prev.currentParameters.acceleration,
+                value: socketData.rpm ?? prev.currentParameters.acceleration.value,
+                status: socketData.metricHealth?.rpm === false ? "warning" as const : prev.currentParameters.acceleration.status,
+              },
+              heat: {
+                ...prev.currentParameters.heat,
+                value: socketData.acoustic ?? prev.currentParameters.heat.value,
+                status: socketData.metricHealth?.acoustic === false ? "warning" as const : prev.currentParameters.heat.status,
+              },
+            },
+          };
+        });
+      }
+    }
+  }, [socketData, deviceId]);
 
   // Get chart data for all metrics based on selected time period
   const getChartData = () => {
