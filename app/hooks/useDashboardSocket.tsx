@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import SockJS from "sockjs-client";
 import { Client, IMessage } from "@stomp/stompjs";
+import { deviceApi } from "@/lib/api";
 
 export function useDashboardSocket() {
   const [data, setData] = useState<any>(null);
@@ -16,9 +17,28 @@ export function useDashboardSocket() {
     });
 
     stompClient.onConnect = () => {
-      stompClient.subscribe("/topic/dashboard", (message: IMessage) => {
+      stompClient.subscribe("/topic/dashboard", async (message: IMessage) => {
         const payload = JSON.parse(message.body);
         setData(payload);
+
+        // If payload has device health data, update it via the health endpoint
+        if (payload.deviceId && (
+          payload.temperature !== undefined ||
+          payload.vibration !== undefined ||
+          payload.rpm !== undefined ||
+          payload.acoustic !== undefined
+        )) {
+          try {
+            await deviceApi.updateDeviceHealth(payload.deviceId, {
+              temperature: payload.temperature ?? null,
+              vibration: payload.vibration ?? null,
+              rpm: payload.rpm ?? null,
+              acoustic: payload.acoustic ?? null,
+            });
+          } catch (error) {
+            console.error("Failed to update device health:", error);
+          }
+        }
       });
     };
 

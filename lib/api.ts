@@ -157,4 +157,19 @@ export const deviceApi = {
       method: 'GET',
     });
   },
+
+  updateDeviceHealth: async (deviceId: number, healthData: {
+    temperature: number | null;
+    vibration: number | null;
+    rpm: number | null;
+    acoustic: number | null;
+  }) => {
+    return apiFetch(`/api/devices/health`, {
+      method: 'POST',
+      body: JSON.stringify({
+        deviceId,
+        ...healthData
+      }),
+    });
+  },
 };

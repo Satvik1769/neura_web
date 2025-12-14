@@ -84,7 +84,7 @@ export function DevicePageClient({ deviceId }: DevicePageClientProps) {
         const getParameterStatus = (metricName: string, metricHealth?: Record<string, boolean>): "healthy" | "warning" | "critical" => {
           if (!metricHealth) return "healthy";
           const isHealthy = metricHealth[metricName];
-          return isHealthy === false ? "warning" : "healthy";
+          return !isHealthy ? "warning" : "healthy";
         };
 
         // Combine the data into EngineData format
