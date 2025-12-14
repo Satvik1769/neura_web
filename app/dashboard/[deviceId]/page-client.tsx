@@ -80,11 +80,15 @@ export function DevicePageClient({ deviceId }: DevicePageClientProps) {
           return;
         }
 
-        // Helper function to determine parameter status
+        // Helper function to determine parameter status based on API health data
         const getParameterStatus = (metricName: string, metricHealth?: Record<string, boolean>): "healthy" | "warning" | "critical" => {
-          if (!metricHealth) return "healthy";
-          const isHealthy = metricHealth[metricName];
-          return !isHealthy ? "warning" : "healthy";
+          console.log("Metric health:", metricHealth);
+          if (!metricHealth || metricHealth[metricName] === undefined) {
+            return "critical"; // Default to healthy if no health data
+          }
+
+          // API returns boolean: true = healthy, false = unhealthy
+          return metricHealth[metricName] ? "healthy" : "warning";
         };
 
         // Combine the data into EngineData format
@@ -104,22 +108,22 @@ export function DevicePageClient({ deviceId }: DevicePageClientProps) {
           currentParameters: {
             temperature: {
               value: parameters.temperature ?? 0,
-              status: getParameterStatus("temperature", parameters.metricHealth),
+              status: getParameterStatus("Temperature", parameters.metricHealth),
               isActive: parameters.temperature !== null && parameters.temperature !== undefined
             },
             vibration: {
               value: parameters.vibration ?? 0,
-              status: getParameterStatus("vibration", parameters.metricHealth),
+              status: getParameterStatus("Vibration", parameters.metricHealth),
               isActive: parameters.vibration !== null && parameters.vibration !== undefined
             },
             acceleration: {
               value: parameters.rpm ?? 0,
-              status: getParameterStatus("rpm", parameters.metricHealth),
+              status: getParameterStatus("RPM", parameters.metricHealth),
               isActive: parameters.rpm !== null && parameters.rpm !== undefined
             },
             heat: {
               value: parameters.acoustic ?? 0,
-              status: getParameterStatus("acoustic", parameters.metricHealth),
+              status: getParameterStatus("Acoustic", parameters.metricHealth),
               isActive: parameters.acoustic !== null && parameters.acoustic !== undefined
             },
           },
@@ -170,22 +174,30 @@ export function DevicePageClient({ deviceId }: DevicePageClientProps) {
               temperature: {
                 ...prev.currentParameters.temperature,
                 value: socketData.temperature ?? prev.currentParameters.temperature.value,
-                status: socketData.metricHealth?.temperature === false ? "warning" as const : prev.currentParameters.temperature.status,
+                status: socketData.metricHealth?.temperature !== undefined
+                  ? (socketData.metricHealth.temperature ? "healthy" as const : "critical" as const)
+                  : prev.currentParameters.temperature.status,
               },
               vibration: {
                 ...prev.currentParameters.vibration,
                 value: socketData.vibration ?? prev.currentParameters.vibration.value,
-                status: socketData.metricHealth?.vibration === false ? "warning" as const : prev.currentParameters.vibration.status,
+                status: socketData.metricHealth?.vibration !== undefined
+                  ? (socketData.metricHealth.vibration ? "healthy" as const : "critical" as const)
+                  : prev.currentParameters.vibration.status,
               },
               acceleration: {
                 ...prev.currentParameters.acceleration,
                 value: socketData.rpm ?? prev.currentParameters.acceleration.value,
-                status: socketData.metricHealth?.rpm === false ? "warning" as const : prev.currentParameters.acceleration.status,
+                status: socketData.metricHealth?.rpm !== undefined
+                  ? (socketData.metricHealth.rpm ? "healthy" as const : "critical" as const)
+                  : prev.currentParameters.acceleration.status,
               },
               heat: {
                 ...prev.currentParameters.heat,
                 value: socketData.acoustic ?? prev.currentParameters.heat.value,
-                status: socketData.metricHealth?.acoustic === false ? "warning" as const : prev.currentParameters.heat.status,
+                status: socketData.metricHealth?.acoustic !== undefined
+                  ? (socketData.metricHealth.acoustic ? "healthy" as const : "critical" as const)
+                  : prev.currentParameters.heat.status,
               },
             },
           };

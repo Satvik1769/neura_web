@@ -97,6 +97,11 @@ export interface DevicesDto {
   healthScore?: number;
   status?: string;
   isHealthy?: boolean;
+  metricHealth?: Record<string, boolean>;
+  temperature?: number;
+  vibration?: number;
+  rpm?: number;
+  acoustic?: number;
 }
 
 

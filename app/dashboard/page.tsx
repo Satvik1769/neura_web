@@ -155,7 +155,30 @@ export default function DashboardPage() {
           <>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {devices.map((device) => {
-              const isHealthy = device.isHealthy ?? (device.healthScore ? device.healthScore > 70 : false);
+              // Calculate overall health status based on metric health
+              const getOverallHealthStatus = () => {
+                if (!device.metricHealth) {
+                  // Fallback to isHealthy or healthScore
+                  return device.isHealthy ?? (device.healthScore ? device.healthScore > 70 : false) ? "healthy" : "warning";
+                }
+
+                const metrics = Object.values(device.metricHealth);
+                const unhealthyCount = metrics.filter(m => m === false).length;
+
+                if (unhealthyCount === 0) return "healthy";
+                if (unhealthyCount >= 2) return "critical";
+                return "warning";
+              };
+
+              const overallStatus = getOverallHealthStatus();
+
+              // Get individual metric statuses
+              const getMetricStatus = (metricName: string): "healthy" | "critical" | "unknown" => {
+                if (!device.metricHealth || device.metricHealth[metricName] === undefined) {
+                  return "unknown";
+                }
+                return device.metricHealth[metricName] ? "healthy" : "critical";
+              };
 
               return (
                 <Card
@@ -180,12 +203,14 @@ export default function DashboardPage() {
                       </div>
                       <Badge
                         className={
-                          isHealthy
+                          overallStatus === "healthy"
                             ? "bg-green-status/20 text-green-status border-green-status/30"
+                            : overallStatus === "critical"
+                            ? "bg-red-500/20 text-red-500 border-red-500/30"
                             : "bg-yellow-500/20 text-yellow-500 border-yellow-500/30"
                         }
                       >
-                        {isHealthy ? "Healthy" : "Warning"}
+                        {overallStatus === "healthy" ? "Healthy" : overallStatus === "critical" ? "Critical" : "Warning"}
                       </Badge>
                     </div>
                   </CardHeader>
@@ -215,6 +240,49 @@ export default function DashboardPage() {
                           <span className="text-foreground font-semibold">
                             {device.healthScore.toFixed(0)}%
                           </span>
+                        </div>
+                      )}
+
+                      {/* Individual Metric Health Indicators */}
+                      {device.metricHealth && (
+                        <div className="pt-2 border-t border-border">
+                          <div className="flex items-center justify-between text-xs">
+                            <span className="text-text-secondary">Metrics:</span>
+                            <div className="flex items-center gap-2">
+                              {/* Temperature */}
+                              <div className="flex items-center gap-1" title="Temperature">
+                                <div className={`w-2 h-2 rounded-full ${
+                                  getMetricStatus("temperature") === "healthy" ? "bg-green-status" :
+                                  getMetricStatus("temperature") === "critical" ? "bg-red-500" : "bg-gray-500"
+                                }`} />
+                                <span className="text-text-secondary">T</span>
+                              </div>
+                              {/* Vibration */}
+                              <div className="flex items-center gap-1" title="Vibration">
+                                <div className={`w-2 h-2 rounded-full ${
+                                  getMetricStatus("vibration") === "healthy" ? "bg-green-status" :
+                                  getMetricStatus("vibration") === "critical" ? "bg-red-500" : "bg-gray-500"
+                                }`} />
+                                <span className="text-text-secondary">V</span>
+                              </div>
+                              {/* RPM */}
+                              <div className="flex items-center gap-1" title="RPM">
+                                <div className={`w-2 h-2 rounded-full ${
+                                  getMetricStatus("rpm") === "healthy" ? "bg-green-status" :
+                                  getMetricStatus("rpm") === "critical" ? "bg-red-500" : "bg-gray-500"
+                                }`} />
+                                <span className="text-text-secondary">R</span>
+                              </div>
+                              {/* Acoustic */}
+                              <div className="flex items-center gap-1" title="Acoustic">
+                                <div className={`w-2 h-2 rounded-full ${
+                                  getMetricStatus("acoustic") === "healthy" ? "bg-green-status" :
+                                  getMetricStatus("acoustic") === "critical" ? "bg-red-500" : "bg-gray-500"
+                                }`} />
+                                <span className="text-text-secondary">A</span>
+                              </div>
+                            </div>
+                          </div>
                         </div>
                       )}
                     </div>
