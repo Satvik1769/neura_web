@@ -116,12 +116,12 @@ export function DevicePageClient({ deviceId }: DevicePageClientProps) {
               status: getParameterStatus("Vibration", parameters.metricHealth),
               isActive: parameters.vibration !== null && parameters.vibration !== undefined
             },
-            acceleration: {
+            rpm: {
               value: parameters.rpm ?? 0,
               status: getParameterStatus("RPM", parameters.metricHealth),
               isActive: parameters.rpm !== null && parameters.rpm !== undefined
             },
-            heat: {
+            acoustic: {
               value: parameters.acoustic ?? 0,
               status: getParameterStatus("Acoustic", parameters.metricHealth),
               isActive: parameters.acoustic !== null && parameters.acoustic !== undefined
@@ -157,50 +157,122 @@ export function DevicePageClient({ deviceId }: DevicePageClientProps) {
         : parseInt(String(socketData.deviceId || '0'));
 
       if (updateDeviceId === parseInt(deviceId)) {
-        console.log("Received real-time update for device:", deviceId, socketData);
+        console.log("🔄 Received real-time update for device:", deviceId);
+        console.log("📦 WebSocket full data:", JSON.stringify(socketData, null, 2));
+        console.log("📊 Has metricHealth?", socketData.metricHealth !== undefined);
+        console.log("📊 Metric health object:", socketData.metricHealth);
+
+        if (socketData.metricHealth) {
+          console.log("✅ Individual metric health values:");
+          console.log("  - Temperature:", socketData.metricHealth.Temperature);
+          console.log("  - Vibration:", socketData.metricHealth.Vibration);
+          console.log("  - RPM:", socketData.metricHealth.RPM);
+          console.log("  - Acoustic:", socketData.metricHealth.Acoustic);
+        } else {
+          console.warn("⚠️ WARNING: WebSocket data does NOT contain metricHealth!");
+          console.warn("⚠️ Metric statuses will NOT be updated without metricHealth");
+        }
 
         // Update engine data with new values from socket
         setEngineData(prev => {
           if (!prev) return prev;
 
-          return {
-            ...prev,
-            // Update health score and status if provided
-            healthScore: socketData.healthScore ?? prev.healthScore,
-            isHealthy: socketData.isHealthy ?? prev.isHealthy,
-            status: socketData.status ?? prev.status,
-            // Update current parameters if they exist in socketData
-            currentParameters: {
-              temperature: {
-                ...prev.currentParameters.temperature,
-                value: socketData.temperature ?? prev.currentParameters.temperature.value,
-                status: socketData.metricHealth?.temperature !== undefined
-                  ? (socketData.metricHealth.temperature ? "healthy" as const : "critical" as const)
-                  : prev.currentParameters.temperature.status,
-              },
-              vibration: {
-                ...prev.currentParameters.vibration,
-                value: socketData.vibration ?? prev.currentParameters.vibration.value,
-                status: socketData.metricHealth?.vibration !== undefined
-                  ? (socketData.metricHealth.vibration ? "healthy" as const : "critical" as const)
-                  : prev.currentParameters.vibration.status,
-              },
-              acceleration: {
-                ...prev.currentParameters.acceleration,
-                value: socketData.rpm ?? prev.currentParameters.acceleration.value,
-                status: socketData.metricHealth?.rpm !== undefined
-                  ? (socketData.metricHealth.rpm ? "healthy" as const : "critical" as const)
-                  : prev.currentParameters.acceleration.status,
-              },
-              heat: {
-                ...prev.currentParameters.heat,
-                value: socketData.acoustic ?? prev.currentParameters.heat.value,
-                status: socketData.metricHealth?.acoustic !== undefined
-                  ? (socketData.metricHealth.acoustic ? "healthy" as const : "critical" as const)
-                  : prev.currentParameters.heat.status,
-              },
+          console.log("🔍 Current RPM status before update:", prev.currentParameters.rpm.status);
+          console.log("🔍 Will update RPM status?", socketData.metricHealth?.RPM !== undefined);
+          console.log("🔍 New RPM status value:", socketData.metricHealth?.RPM);
+
+          // Update current parameters
+          const updatedParameters = {
+            temperature: {
+              ...prev.currentParameters.temperature,
+              value: socketData.temperature !== undefined ? socketData.temperature : prev.currentParameters.temperature.value,
+              status: socketData.metricHealth?.Temperature !== undefined
+                ? (socketData.metricHealth.Temperature ? "healthy" as const : "warning" as const)
+                : prev.currentParameters.temperature.status,
+              isActive: socketData.temperature !== undefined ? true : prev.currentParameters.temperature.isActive,
+            },
+            vibration: {
+              ...prev.currentParameters.vibration,
+              value: socketData.vibration !== undefined ? socketData.vibration : prev.currentParameters.vibration.value,
+              status: socketData.metricHealth?.Vibration !== undefined
+                ? (socketData.metricHealth.Vibration ? "healthy" as const : "warning" as const)
+                : prev.currentParameters.vibration.status,
+              isActive: socketData.vibration !== undefined ? true : prev.currentParameters.vibration.isActive,
+            },
+            rpm: {
+              ...prev.currentParameters.rpm,
+              value: socketData.rpm !== undefined ? socketData.rpm : prev.currentParameters.rpm.value,
+              status: socketData.metricHealth?.RPM !== undefined
+                ? (socketData.metricHealth.RPM ? "healthy" as const : "warning" as const)
+                : prev.currentParameters.rpm.status,
+              isActive: socketData.rpm !== undefined ? true : prev.currentParameters.rpm.isActive,
+            },
+            acoustic: {
+              ...prev.currentParameters.acoustic,
+              value: socketData.acoustic !== undefined ? socketData.acoustic : prev.currentParameters.acoustic.value,
+              status: socketData.metricHealth?.Acoustic !== undefined
+                ? (socketData.metricHealth.Acoustic ? "healthy" as const : "warning" as const)
+                : prev.currentParameters.acoustic.status,
+              isActive: socketData.acoustic !== undefined ? true : prev.currentParameters.acoustic.isActive,
             },
           };
+
+          console.log("🔍 RPM status after update:", updatedParameters.rpm.status);
+
+          // Calculate overall device health based on individual metric statuses
+          const calculateOverallHealth = () => {
+            const statuses = [
+              updatedParameters.temperature.status,
+              updatedParameters.vibration.status,
+              updatedParameters.rpm.status,
+              updatedParameters.acoustic.status,
+            ];
+
+            // Count unhealthy metrics
+            const criticalCount = statuses.filter(s => s === "critical").length;
+            const warningCount = statuses.filter(s => s === "warning").length;
+
+            // Determine overall health
+            if (criticalCount > 0 || warningCount > 0) {
+              return false; // Device is not healthy if any metric is unhealthy
+            }
+            return true; // All metrics are healthy
+          };
+
+          // Calculate health score based on metric statuses
+          const calculateHealthScore = () => {
+            const statuses = [
+              updatedParameters.temperature.status,
+              updatedParameters.vibration.status,
+              updatedParameters.rpm.status,
+              updatedParameters.acoustic.status,
+            ];
+
+            const healthyCount = statuses.filter(s => s === "healthy").length;
+            const totalMetrics = statuses.length;
+
+            return Math.round((healthyCount / totalMetrics) * 100);
+          };
+
+          // Update overall health if metricHealth was provided
+          const shouldUpdateOverallHealth = socketData.metricHealth !== undefined;
+
+          const updated = {
+            ...prev,
+            // Update health score and status
+            healthScore: shouldUpdateOverallHealth ? calculateHealthScore() : (socketData.healthScore ?? prev.healthScore),
+            isHealthy: shouldUpdateOverallHealth ? calculateOverallHealth() : (socketData.isHealthy ?? prev.isHealthy),
+            status: prev.status, // Keep existing status or could be calculated based on health
+            currentParameters: updatedParameters,
+          };
+
+          console.log("💾 Updated engineData:", {
+            healthScore: updated.healthScore,
+            isHealthy: updated.isHealthy,
+            currentParameters: updated.currentParameters,
+          });
+
+          return updated;
         });
       }
     }
@@ -352,18 +424,18 @@ export function DevicePageClient({ deviceId }: DevicePageClientProps) {
             />
             <ParameterCard
               label="RPM"
-              value={engineData.currentParameters.acceleration.value}
+              value={engineData.currentParameters.rpm.value}
               unit="RPM"
-              status={engineData.currentParameters.acceleration.status}
-              isActive={engineData.currentParameters.acceleration.isActive}
+              status={engineData.currentParameters.rpm.status}
+              isActive={engineData.currentParameters.rpm.isActive}
               type="acceleration"
             />
             <ParameterCard
               label="Acoustic"
-              value={engineData.currentParameters.heat.value}
+              value={engineData.currentParameters.acoustic.value}
               unit="dB"
-              status={engineData.currentParameters.heat.status}
-              isActive={engineData.currentParameters.heat.isActive}
+              status={engineData.currentParameters.acoustic.status}
+              isActive={engineData.currentParameters.acoustic.isActive}
               type="heat"
             />
           </div>

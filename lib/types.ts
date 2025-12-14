@@ -64,8 +64,8 @@ export interface EngineData {
   currentParameters: {
     temperature: { value: number; status: ParameterStatus; isActive: boolean };
     vibration: { value: number; status: ParameterStatus; isActive: boolean };
-    acceleration: { value: number; status: ParameterStatus; isActive: boolean };
-    heat: { value: number; status: ParameterStatus; isActive: boolean };
+    rpm: { value: number; status: ParameterStatus; isActive: boolean };
+    acoustic: { value: number; status: ParameterStatus; isActive: boolean };
   };
   historicalData: ParameterReading[];
 }

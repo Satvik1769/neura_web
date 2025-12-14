@@ -252,32 +252,32 @@ export default function DashboardPage() {
                               {/* Temperature */}
                               <div className="flex items-center gap-1" title="Temperature">
                                 <div className={`w-2 h-2 rounded-full ${
-                                  getMetricStatus("temperature") === "healthy" ? "bg-green-status" :
-                                  getMetricStatus("temperature") === "critical" ? "bg-red-500" : "bg-gray-500"
+                                  getMetricStatus("Temperature") === "healthy" ? "bg-green-status" :
+                                  getMetricStatus("Temperature") === "critical" ? "bg-red-500" : "bg-gray-500"
                                 }`} />
                                 <span className="text-text-secondary">T</span>
                               </div>
                               {/* Vibration */}
                               <div className="flex items-center gap-1" title="Vibration">
                                 <div className={`w-2 h-2 rounded-full ${
-                                  getMetricStatus("vibration") === "healthy" ? "bg-green-status" :
-                                  getMetricStatus("vibration") === "critical" ? "bg-red-500" : "bg-gray-500"
+                                  getMetricStatus("Vibration") === "healthy" ? "bg-green-status" :
+                                  getMetricStatus("Vibration") === "critical" ? "bg-red-500" : "bg-gray-500"
                                 }`} />
                                 <span className="text-text-secondary">V</span>
                               </div>
                               {/* RPM */}
                               <div className="flex items-center gap-1" title="RPM">
                                 <div className={`w-2 h-2 rounded-full ${
-                                  getMetricStatus("rpm") === "healthy" ? "bg-green-status" :
-                                  getMetricStatus("rpm") === "critical" ? "bg-red-500" : "bg-gray-500"
+                                  getMetricStatus("RPM") === "healthy" ? "bg-green-status" :
+                                  getMetricStatus("RPM") === "critical" ? "bg-red-500" : "bg-gray-500"
                                 }`} />
                                 <span className="text-text-secondary">R</span>
                               </div>
                               {/* Acoustic */}
                               <div className="flex items-center gap-1" title="Acoustic">
                                 <div className={`w-2 h-2 rounded-full ${
-                                  getMetricStatus("acoustic") === "healthy" ? "bg-green-status" :
-                                  getMetricStatus("acoustic") === "critical" ? "bg-red-500" : "bg-gray-500"
+                                  getMetricStatus("Acoustic") === "healthy" ? "bg-green-status" :
+                                  getMetricStatus("Acoustic") === "critical" ? "bg-red-500" : "bg-gray-500"
                                 }`} />
                                 <span className="text-text-secondary">A</span>
                               </div>
