@@ -6,13 +6,9 @@ import { getApiUrl } from './config';
 
 // Response types
 interface AuthResponse {
-  user: {
-    id: string;
-    email: string;
-    name: string;
-  };
-  token?: string;
-  refreshToken?: string;
+  id: number;
+  email: string;
+  name: string;
 }
 
 export class ApiError extends Error {
@@ -108,8 +104,8 @@ export const authApi = {
     });
   },
 
-  getCurrentUser: async (): Promise<AuthResponse['user']> => {
-    return apiFetch<AuthResponse['user']>('/api/auth/me', {
+  getCurrentUser: async (): Promise<AuthResponse> => {
+    return apiFetch<AuthResponse>('/api/auth/me', {
       method: 'GET',
     });
   },

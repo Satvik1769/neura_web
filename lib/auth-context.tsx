@@ -6,7 +6,7 @@ import { authApi } from "./api";
 import { tokenStorage } from "./auth-storage";
 
 interface User {
-  id: string;
+  id: number;
   email: string;
   name: string;
 }
@@ -48,6 +48,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         // Token might be expired, clear it
         tokenStorage.removeToken();
         localStorage.removeItem("user");
+        localStorage.removeItem("id");
+        localStorage.removeItem("email");
       } finally {
         setIsLoading(false);
       }
@@ -60,16 +62,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       const response = await authApi.login(email, password);
 
-      // OPTION 1: If backend sets HTTP-only cookies
-      // Just set the user data, token is in cookies
-      if (response.user) {
-        // Handle case where backend returns just a string instead of user object
-        const userObj = typeof response.user === 'string'
-          ? { id: '0', email: email, name: response.user }
-          : response.user;
-
-        setUser(userObj);
-        localStorage.setItem("user", JSON.stringify(userObj));
+      // Backend sets HTTP-only cookies and returns user data directly
+      if (response != null) {
+        setUser(response);
+        localStorage.setItem("user", response.name);
+        localStorage.setItem("id", response.id.toString());
+        localStorage.setItem("email", response.email);
       }
 
       // OPTION 2: If backend returns token in response body
@@ -96,15 +94,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       const response = await authApi.register(email, password, name);
 
-      // OPTION 1: If backend sets HTTP-only cookies
-      if (response.user) {
-        // Handle case where backend returns just a string instead of user object
-        const userObj = typeof response.user === 'string'
-          ? { id: '0', email: email, name: response.user }
-          : response.user;
-
-        setUser(userObj);
-        localStorage.setItem("user", JSON.stringify(userObj));
+      // Backend sets HTTP-only cookies and returns user data directly
+      if (response != null) {
+        setUser(response);
+        localStorage.setItem("user", response.name);
+        localStorage.setItem("id", response.id.toString());
+        localStorage.setItem("email", response.email);
       }
 
       // OPTION 2: If backend returns token in response body
@@ -137,6 +132,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUser(null);
       tokenStorage.removeToken();
       localStorage.removeItem("user");
+      localStorage.removeItem("id");
+      localStorage.removeItem("email");
       router.push("/login");
     }
   };
