@@ -57,7 +57,7 @@ export default function DashboardPage() {
   // Handle real-time updates from WebSocket
   useEffect(() => {
     if (socketData) {
-      console.log("Received real-time dashboard update:", socketData);
+      console.log("📡 Received real-time dashboard update:", socketData);
 
       // If socket sends array of all devices, replace the devices
       if (Array.isArray(socketData)) {
@@ -65,21 +65,34 @@ export default function DashboardPage() {
       }
       // If socket sends a single device update, merge it with existing devices
       else if (socketData.deviceId !== undefined) {
-        setDevices(prev => {
-          const deviceExists = prev.some(d => d.deviceId === socketData.deviceId);
+        // Calculate health score if metricHealth is provided
+        let updatedData = { ...socketData };
 
-          if (deviceExists) {
-            // Update existing device
-            return prev.map(device =>
-              device.deviceId === socketData.deviceId
-                ? { ...device, ...socketData }
-                : device
-            );
-          } else {
-            // Add new device if it doesn't exist
-            return [...prev, socketData as DevicesDto];
-          }
-        });
+        if (socketData.metricHealth) {
+          const healthValues = Object.values(socketData.metricHealth).filter(v => v !== undefined);
+          const healthyCount = healthValues.filter(v => v === true).length;
+          const totalMetrics = healthValues.length;
+
+          // Calculate health score (0-100%)
+          const healthScore = totalMetrics > 0 ? Math.round((healthyCount / totalMetrics) * 100) : 0;
+
+          // Determine if device is healthy (all metrics must be healthy)
+          const isHealthy = healthValues.length > 0 && healthValues.every(v => v === true);
+
+          updatedData = {
+            ...socketData,
+            healthScore,
+            isHealthy,
+          };
+        }
+
+        setDevices(prev =>
+          prev.map(device =>
+            device.deviceId === socketData.deviceId
+              ? { ...device, ...updatedData }
+              : device
+          )
+        );
       }
     }
   }, [socketData]);
