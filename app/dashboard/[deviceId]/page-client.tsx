@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Download, Loader2 } from "lucide-react";
+import { Download, Loader2, Check, ChevronsUpDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ParameterCard } from "@/components/parameter-card";
 import { DashboardLayout } from "@/components/dashboard-layout";
@@ -17,6 +17,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   LineChart,
   Line,
@@ -46,12 +52,24 @@ interface PerformanceData {
   multiplyRatio: Record<string, Record<string, number>>;
 }
 
+// Available parameters with their display properties
+const AVAILABLE_PARAMETERS = [
+  { key: "Temperature", label: "Temperature (°C)", color: "#ff6b6b" },
+  { key: "Vibration", label: "Vibration (Hz)", color: "#4ecdc4" },
+  { key: "RPM", label: "RPM", color: "#00d4ff" },
+  { key: "Acoustic", label: "Acoustic (dB)", color: "#ffd93d" },
+] as const;
+
 export function DevicePageClient({ deviceId }: DevicePageClientProps) {
   const [engineData, setEngineData] = useState<EngineData | null>(null);
   const [performanceData, setPerformanceData] = useState<PerformanceData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedTimePeriod, setSelectedTimePeriod] = useState<string>("1D");
+  const [selectedParameters, setSelectedParameters] = useState<string[]>(
+    AVAILABLE_PARAMETERS.map(p => p.key)
+  );
+  const [isParameterDropdownOpen, setIsParameterDropdownOpen] = useState(false);
   const socketData = useDashboardSocket();
 
   useEffect(() => {
@@ -333,6 +351,32 @@ export function DevicePageClient({ deviceId }: DevicePageClientProps) {
 
   const chartData = getChartData();
 
+  // Toggle parameter selection
+  const toggleParameter = (parameterKey: string) => {
+    setSelectedParameters(prev => {
+      if (prev.includes(parameterKey)) {
+        // Don't allow deselecting all parameters
+        if (prev.length === 1) {
+          showToast.info("Selection", "At least one parameter must be selected");
+          return prev;
+        }
+        return prev.filter(p => p !== parameterKey);
+      } else {
+        return [...prev, parameterKey];
+      }
+    });
+  };
+
+  // Select all parameters
+  const selectAllParameters = () => {
+    setSelectedParameters(AVAILABLE_PARAMETERS.map(p => p.key));
+  };
+
+  // Clear all parameters (keep at least one)
+  const clearAllParameters = () => {
+    setSelectedParameters([AVAILABLE_PARAMETERS[0].key]);
+  };
+
   if (isLoading) {
     return (
       <DashboardLayout>
@@ -448,19 +492,87 @@ export function DevicePageClient({ deviceId }: DevicePageClientProps) {
               <h3 className="text-lg md:text-xl font-semibold text-foreground">
                 Performance Trends
               </h3>
-              {/* Time Period Selector */}
-              <div className="flex items-center gap-2 w-full sm:w-auto">
-                <span className="text-sm text-text-secondary whitespace-nowrap">Period:</span>
-                <Select value={selectedTimePeriod} onValueChange={setSelectedTimePeriod}>
-                  <SelectTrigger className="w-full sm:w-[120px] border-border bg-background">
-                    <SelectValue placeholder="Select period" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="1D">1 Day</SelectItem>
-                    <SelectItem value="7D">7 Days</SelectItem>
-                    <SelectItem value="1M">1 Month</SelectItem>
-                  </SelectContent>
-                </Select>
+              <div className="flex items-center gap-3 w-full sm:w-auto flex-wrap">
+                {/* Parameter Selector */}
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-text-secondary whitespace-nowrap">Parameters:</span>
+                  <Popover open={isParameterDropdownOpen} onOpenChange={setIsParameterDropdownOpen}>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        role="combobox"
+                        aria-expanded={isParameterDropdownOpen}
+                        className="w-[200px] justify-between border-border bg-background"
+                      >
+                        <span className="truncate">
+                          {selectedParameters.length === AVAILABLE_PARAMETERS.length
+                            ? "All Parameters"
+                            : `${selectedParameters.length} selected`}
+                        </span>
+                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-[250px] p-0" align="end">
+                      <div className="p-3 border-b border-border">
+                        <div className="flex items-center justify-between gap-2">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={selectAllParameters}
+                            className="h-8 text-xs"
+                          >
+                            Select All
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={clearAllParameters}
+                            className="h-8 text-xs"
+                          >
+                            Clear
+                          </Button>
+                        </div>
+                      </div>
+                      <div className="p-2 space-y-1">
+                        {AVAILABLE_PARAMETERS.map((param) => (
+                          <div
+                            key={param.key}
+                            className="flex items-center space-x-2 rounded-md px-2 py-2 hover:bg-accent cursor-pointer"
+                            onClick={() => toggleParameter(param.key)}
+                          >
+                            <Checkbox
+                              checked={selectedParameters.includes(param.key)}
+                              onCheckedChange={() => toggleParameter(param.key)}
+                              className="pointer-events-none"
+                            />
+                            <div className="flex items-center gap-2 flex-1">
+                              <div
+                                className="w-3 h-3 rounded-sm"
+                                style={{ backgroundColor: param.color }}
+                              />
+                              <span className="text-sm">{param.label}</span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </PopoverContent>
+                  </Popover>
+                </div>
+                
+                {/* Time Period Selector */}
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-text-secondary whitespace-nowrap">Period:</span>
+                  <Select value={selectedTimePeriod} onValueChange={setSelectedTimePeriod}>
+                    <SelectTrigger className="w-[120px] border-border bg-background">
+                      <SelectValue placeholder="Select period" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="1D">1 Day</SelectItem>
+                      <SelectItem value="7D">7 Days</SelectItem>
+                      <SelectItem value="1M">1 Month</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
             </div>
 
@@ -526,42 +638,50 @@ export function DevicePageClient({ deviceId }: DevicePageClientProps) {
                     layout="horizontal"
                     verticalAlign="bottom"
                   />
-                  <Line
-                    type="monotone"
-                    dataKey="Temperature"
-                    stroke="#ff6b6b"
-                    strokeWidth={2}
-                    dot={false}
-                    activeDot={{ r: 6 }}
-                    name="Temperature (°C)"
-                  />
-                  <Line
-                    type="monotone"
-                    dataKey="Vibration"
-                    stroke="#4ecdc4"
-                    strokeWidth={2}
-                    dot={false}
-                    activeDot={{ r: 6 }}
-                    name="Vibration (Hz)"
-                  />
-                  <Line
-                    type="monotone"
-                    dataKey="RPM"
-                    stroke="#00d4ff"
-                    strokeWidth={2}
-                    dot={false}
-                    activeDot={{ r: 6 }}
-                    name="RPM"
-                  />
-                  <Line
-                    type="monotone"
-                    dataKey="Acoustic"
-                    stroke="#ffd93d"
-                    strokeWidth={2}
-                    dot={false}
-                    activeDot={{ r: 6 }}
-                    name="Acoustic (dB)"
-                  />
+                  {selectedParameters.includes("Temperature") && (
+                    <Line
+                      type="monotone"
+                      dataKey="Temperature"
+                      stroke="#ff6b6b"
+                      strokeWidth={2}
+                      dot={false}
+                      activeDot={{ r: 6 }}
+                      name="Temperature (°C)"
+                    />
+                  )}
+                  {selectedParameters.includes("Vibration") && (
+                    <Line
+                      type="monotone"
+                      dataKey="Vibration"
+                      stroke="#4ecdc4"
+                      strokeWidth={2}
+                      dot={false}
+                      activeDot={{ r: 6 }}
+                      name="Vibration (Hz)"
+                    />
+                  )}
+                  {selectedParameters.includes("RPM") && (
+                    <Line
+                      type="monotone"
+                      dataKey="RPM"
+                      stroke="#00d4ff"
+                      strokeWidth={2}
+                      dot={false}
+                      activeDot={{ r: 6 }}
+                      name="RPM"
+                    />
+                  )}
+                  {selectedParameters.includes("Acoustic") && (
+                    <Line
+                      type="monotone"
+                      dataKey="Acoustic"
+                      stroke="#ffd93d"
+                      strokeWidth={2}
+                      dot={false}
+                      activeDot={{ r: 6 }}
+                      name="Acoustic (dB)"
+                    />
+                  )}
                 </LineChart>
               </ResponsiveContainer>
               </div>
