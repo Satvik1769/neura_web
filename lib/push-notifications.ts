@@ -153,29 +153,39 @@ export async function unsubscribeFromPushNotifications(): Promise<void> {
     throw new Error('Push notifications are not supported in this browser');
   }
 
-  const registration = await navigator.serviceWorker.getRegistration('/');
-  if (!registration) {
-    console.warn('No service worker registration found');
-    return;
-  }
+  let subscription: PushSubscription | null = null;
 
   try {
-    const subscription = await registration.pushManager.getSubscription();
-    if (!subscription) {
-      console.warn('No push subscription found');
-      return;
-    }
+    const registration = await navigator.serviceWorker.getRegistration('/');
 
-    // Unsubscribe from push manager
-    const unsubscribed = await subscription.unsubscribe();
-    if (unsubscribed) {
-      // Notify server
-      await pushNotificationApi.unsubscribe(subscription);
-      console.log('Successfully unsubscribed from push notifications');
+    if (registration) {
+      subscription = await registration.pushManager.getSubscription();
+
+      if (subscription) {
+        // Unsubscribe from push manager locally
+        const unsubscribed = await subscription.unsubscribe();
+        console.log('Local push subscription unsubscribed:', unsubscribed);
+      } else {
+        console.warn('No local push subscription found');
+      }
+    } else {
+      console.warn('No service worker registration found');
     }
   } catch (error) {
-    console.error('Failed to unsubscribe from push notifications:', error);
-    throw error;
+    console.error('Error during local unsubscribe:', error);
+    // Continue to notify server even if local cleanup fails
+  }
+
+  // Always try to notify server to clean up, even if local subscription not found
+  try {
+    if (subscription) {
+      // Have local subscription - send it to server
+      await pushNotificationApi.unsubscribe(subscription);
+      console.log('✅ Successfully unsubscribed from push notifications (with subscription)');
+    }
+  } catch (error) {
+    console.error('Failed to notify server about unsubscribe:', error);
+    // Don't throw - local cleanup already happened
   }
 }
 

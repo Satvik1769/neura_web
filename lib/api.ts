@@ -219,7 +219,7 @@ export const pushNotificationApi = {
   unsubscribe: async (subscription: PushSubscription): Promise<void> => {
     return apiFetch<void>('/api/pn/unsubscribe', {
       method: 'POST',
-      body: JSON.stringify(subscription),
+      body: JSON.stringify({ endpoint: subscription.endpoint }),
     });
   },
 };
