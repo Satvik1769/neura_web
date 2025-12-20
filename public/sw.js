@@ -60,19 +60,68 @@ self.addEventListener('push', (event) => {
     }
   }
 
-  // Show notification
-  event.waitUntil(
-    self.registration.showNotification(notificationData.title, {
-      body: notificationData.body,
-      icon: notificationData.icon,
-      badge: notificationData.badge,
-      tag: notificationData.tag,
-      data: notificationData.data,
-      requireInteraction: notificationData.requireInteraction,
-      actions: notificationData.actions,
-      vibrate: [200, 100, 200],
-    })
-  );
+  console.log('📋 Final notification data:', notificationData);
+
+  // Show notification with comprehensive error handling
+  const notificationPromise = (async () => {
+    try {
+      console.log('🚀 Attempting to show notification...');
+
+      // Check registration
+      if (!self.registration) {
+        throw new Error('Service worker registration not available');
+      }
+      console.log('✓ Service worker registration exists');
+
+      // Prepare notification options
+      const options = {
+        body: notificationData.body,
+        tag: notificationData.tag,
+        data: notificationData.data,
+        requireInteraction: true, // Force notification to stay visible
+        vibrate: [200, 100, 200],
+        // Note: icon and badge removed - add proper PNG files to use them
+        // icon: '/icon-192x192.png',
+        // badge: '/badge-72x72.png',
+      };
+
+      // Only add actions if not empty
+      if (notificationData.actions && notificationData.actions.length > 0) {
+        options.actions = notificationData.actions;
+      }
+
+      console.log('📝 Notification options:', options);
+
+      // Show notification
+      await self.registration.showNotification(notificationData.title, options);
+
+      console.log('✅ Notification shown successfully!');
+      console.log('Title:', notificationData.title);
+      console.log('Body:', notificationData.body);
+
+    } catch (error) {
+      console.error('❌ FAILED TO SHOW NOTIFICATION');
+      console.error('Error:', error);
+      console.error('Error name:', error.name);
+      console.error('Error message:', error.message);
+      console.error('Error stack:', error.stack);
+
+      // Try showing a fallback notification
+      try {
+        console.log('🔄 Attempting fallback notification...');
+        await self.registration.showNotification('Neura Alert', {
+          body: 'You have a new notification (fallback)',
+        });
+        console.log('✅ Fallback notification shown');
+      } catch (fallbackError) {
+        console.error('❌ Even fallback notification failed:', fallbackError);
+      }
+    }
+  })();
+
+  event.waitUntil(notificationPromise);
+
+  console.log('⏳ waitUntil called - event lifecycle extended');
 });
 
 /**
