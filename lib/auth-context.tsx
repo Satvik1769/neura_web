@@ -28,24 +28,35 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     // Check if user is logged in
-    // OPTION 1: If using HTTP-only cookies, backend will validate automatically
-    // OPTION 2: If using localStorage, check for token
     const checkAuth = async () => {
       try {
-        // If your backend returns token in response, uncomment this:
-        // const token = tokenStorage.getToken();
-        // if (!token) {
-        //   setIsLoading(false);
-        //   return;
-        // }
+        // First, try to get user from localStorage (instant)
+        const cachedName = localStorage.getItem("user");
+        const cachedId = localStorage.getItem("id");
+        const cachedEmail = localStorage.getItem("email");
 
-        // Try to fetch current user from backend
-        const userData = await authApi.getCurrentUser();
-        setUser(userData);
+        if (cachedName && cachedId && cachedEmail) {
+          // Set user immediately from cache
+          setUser({
+            name: cachedName,
+            id: parseInt(cachedId),
+            email: cachedEmail,
+          });
+        } else{
+          // Then validate with backend (this will update if needed)
+          const userData = await authApi.getCurrentUser();
+          setUser({
+            name: userData.name,
+            id: userData.id,
+            email: userData.email,
+          });
+        }
+
 
       } catch (error) {
         console.error("Auth check failed:", error);
-        // Token might be expired, clear it
+        // Token might be expired, clear everything
+        setUser(null);
         tokenStorage.removeToken();
         localStorage.removeItem("user");
         localStorage.removeItem("id");
