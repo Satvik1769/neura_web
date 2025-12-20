@@ -169,3 +169,57 @@ export const deviceApi = {
     });
   },
 };
+
+/**
+ * Push Notification API calls
+ */
+export const pushNotificationApi = {
+  /**
+   * Get VAPID public key for client subscription
+   */
+  getVapidPublicKey: async (): Promise<string> => {
+    const url = getApiUrl('/api/pn/public-key');
+
+    const response = await fetch(url, {
+      method: 'GET',
+      credentials: 'include',
+    });
+
+    if (!response.ok) {
+      throw new ApiError('Failed to get VAPID public key', response.status);
+    }
+
+    // Try to get as text first
+    const text = await response.text();
+
+    // Check if it's JSON
+    try {
+      const json = JSON.parse(text);
+      // Handle different response formats
+      return json.publicKey || json.key || json.vapidPublicKey || text;
+    } catch {
+      // If not JSON, return the raw text (trimmed)
+      return text.trim();
+    }
+  },
+
+  /**
+   * Subscribe to push notifications
+   */
+  subscribe: async (subscription: PushSubscription): Promise<void> => {
+    return apiFetch<void>('/api/pn/subscribe', {
+      method: 'POST',
+      body: JSON.stringify(subscription),
+    });
+  },
+
+  /**
+   * Unsubscribe from push notifications
+   */
+  unsubscribe: async (subscription: PushSubscription): Promise<void> => {
+    return apiFetch<void>('/api/pn/unsubscribe', {
+      method: 'POST',
+      body: JSON.stringify(subscription),
+    });
+  },
+};

@@ -1,10 +1,10 @@
 "use client";
 
+import { useEffect } from "react";
 import { DashboardLayout } from "@/components/dashboard-layout";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
@@ -12,9 +12,44 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Settings, Bell, Shield, Palette, Globe, Database } from "lucide-react";
+import { Settings, Bell, Shield, Palette, Globe, Database, Loader2, CheckCircle2, XCircle } from "lucide-react";
+import { usePushNotifications } from "@/app/hooks/usePushNotifications";
+import { showToast } from "@/lib/toast";
+import { Checkbox } from "@/components/ui/checkbox";
 
 export default function SettingsPage() {
+  // Push notifications
+  const {
+    isSupported: isPushSupported,
+    permission,
+    isSubscribed,
+    isLoading: isPushLoading,
+    error: pushError,
+    subscribe: subscribeToPush,
+    unsubscribe: unsubscribeFromPush,
+  } = usePushNotifications();
+
+  // Handle push notification errors
+  useEffect(() => {
+    if (pushError) {
+      showToast.error("Notification Error", pushError);
+    }
+  }, [pushError]);
+
+  // Handle notification toggle
+  const handlePushNotificationToggle = async () => {
+    if (isPushLoading) return;
+
+    if (isSubscribed) {
+      await unsubscribeFromPush();
+      showToast.success("Notifications", "Push notifications disabled");
+    } else {
+      await subscribeToPush();
+      if (!pushError) {
+        showToast.success("Notifications", "Push notifications enabled");
+      }
+    }
+  };
   return (
     <DashboardLayout>
       <div className="container mx-auto p-6 md:p-8 space-y-8">
@@ -59,16 +94,34 @@ export default function SettingsPage() {
                   />
                 </div>
                 <div className="flex items-center justify-between">
-                  <div className="space-y-0.5">
-                    <Label className="text-foreground">Push Notifications</Label>
+                  <div className="space-y-0.5 flex-1">
+                    <div className="flex items-center gap-2">
+                      <Label className="text-foreground">Push Notifications</Label>
+                      {isPushLoading && (
+                        <Loader2 className="w-3 h-3 text-cyan-accent animate-spin" />
+                      )}
+                      {!isPushLoading && isSubscribed && (
+                        <CheckCircle2 className="w-3 h-3 text-green-status" />
+                      )}
+                      {!isPushLoading && !isSubscribed && permission === 'denied' && (
+                        <XCircle className="w-3 h-3 text-red-500" />
+                      )}
+                    </div>
                     <p className="text-sm text-text-secondary">
-                      Get push notifications on your device
+                      {!isPushSupported
+                        ? "Push notifications are not supported in this browser"
+                        : permission === 'denied'
+                        ? "Notifications blocked. Enable in browser settings."
+                        : isSubscribed
+                        ? "Receiving push notifications for device alerts"
+                        : "Enable push notifications for real-time device alerts"}
                     </p>
                   </div>
-                  <input
-                    type="checkbox"
-                    defaultChecked
-                    className="w-4 h-4 text-cyan-accent bg-background border-border rounded focus:ring-cyan-accent"
+                  <Checkbox
+                    checked={isSubscribed}
+                    onCheckedChange={handlePushNotificationToggle}
+                    disabled={isPushLoading || !isPushSupported || permission === 'denied'}
+                    className="data-[state=checked]:bg-cyan-accent data-[state=checked]:border-cyan-accent"
                   />
                 </div>
                 <div className="flex items-center justify-between">
